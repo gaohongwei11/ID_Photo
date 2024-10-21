@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, Form, File
+from fastapi import FastAPI, UploadFile, Form, File, Request
 from hivision import IDCreator
 from hivision.error import FaceError
 from hivision.creator.layout_calculator import (
@@ -38,6 +38,7 @@ app.add_middleware(
 # 证件照智能制作接口
 @app.post("/idphoto")
 async def idphoto_inference(
+    request: Request,
     input_image: UploadFile = File(None),
     input_image_base64: str = Form(None),
     height: int = Form(413),
@@ -52,6 +53,22 @@ async def idphoto_inference(
     top_distance_max: float = 0.12,
     top_distance_min: float = 0.10,
 ):  
+    # 获取 Content-Type
+    content_type = request.headers.get("Content-Type", "")
+    if "application/json" in content_type:
+        json_data = await request.json()
+        input_image_base64 = json_data.get("input_image_base64")
+        height = json_data.get("height", height)
+        width = json_data.get("width", width)
+        human_matting_model = json_data.get("human_matting_model", human_matting_model)
+        face_detect_model = json_data.get("face_detect_model", face_detect_model)
+        hd = json_data.get("hd", hd)
+        dpi = json_data.get("dpi", dpi)
+        face_align = json_data.get("face_align", face_align)
+        head_measure_ratio = json_data.get("head_measure_ratio", head_measure_ratio)
+        head_height_ratio = json_data.get("head_height_ratio", head_height_ratio)
+        top_distance_max = json_data.get("top_distance_max", top_distance_max)
+        top_distance_min = json_data.get("top_distance_min", top_distance_min)
     # 如果传入了base64，则直接使用base64解码
     if input_image_base64:
         img = base64_2_numpy(input_image_base64)
@@ -97,11 +114,19 @@ async def idphoto_inference(
 # 人像抠图接口
 @app.post("/human_matting")
 async def human_matting_inference(
+    request: Request,
     input_image: UploadFile = File(None),
     input_image_base64: str = Form(None),
     human_matting_model: str = Form("hivision_modnet"),
     dpi: int = Form(300),
 ):
+    # 获取 Content-Type
+    content_type = request.headers.get("Content-Type", "")
+    if "application/json" in content_type:
+        json_data = await request.json()
+        input_image_base64 = json_data.get("input_image_base64")
+        human_matting_model = json_data.get("human_matting_model", human_matting_model)
+        dpi = json_data.get("dpi", dpi)
     if input_image_base64:
         img = base64_2_numpy(input_image_base64)
     else:
@@ -132,6 +157,7 @@ async def human_matting_inference(
 # 透明图像添加纯色背景接口
 @app.post("/add_background")
 async def photo_add_background(
+    request: Request,
     input_image: UploadFile = File(None),
     input_image_base64: str = Form(None),
     color: str = Form("000000"),
@@ -141,6 +167,15 @@ async def photo_add_background(
 ):
     render_choice = ["pure_color", "updown_gradient", "center_gradient"]
 
+    # 获取 Content-Type
+    content_type = request.headers.get("Content-Type", "")
+    if "application/json" in content_type:
+        json_data = await request.json()
+        input_image_base64 = json_data.get("input_image_base64")
+        color = json_data.get("color", color)
+        kb = json_data.get("kb", kb)
+        dpi = json_data.get("dpi", dpi)
+        render = json_data.get("render", render)
     if input_image_base64:
         img = base64_2_numpy(input_image_base64)
     else:
@@ -174,6 +209,7 @@ async def photo_add_background(
 # 六寸排版照生成接口
 @app.post("/generate_layout_photos")
 async def generate_layout_photos(
+    request: Request,
     input_image: UploadFile = File(None),
     input_image_base64: str = Form(None),
     height: int = Form(413),
@@ -181,6 +217,15 @@ async def generate_layout_photos(
     kb: int = Form(None),
     dpi: int = Form(300),
 ):
+    # 获取 Content-Type
+    content_type = request.headers.get("Content-Type", "")
+    if "application/json" in content_type:
+        json_data = await request.json()
+        input_image_base64 = json_data.get("input_image_base64")
+        height = json_data.get("height", height)
+        width = json_data.get("width", width)
+        kb = json_data.get("kb", kb)
+        dpi = json_data.get("dpi", dpi)
     # try:
     if input_image_base64:
         img = base64_2_numpy(input_image_base64)
@@ -220,6 +265,7 @@ async def generate_layout_photos(
 # 透明图像添加水印接口
 @app.post("/watermark")
 async def watermark(
+    request: Request,
     input_image: UploadFile = File(None),
     input_image_base64: str = Form(None),
     text: str = Form("Hello"),
@@ -231,6 +277,19 @@ async def watermark(
     kb: int = Form(None),
     dpi: int = Form(300),
 ):
+    # 获取 Content-Type
+    content_type = request.headers.get("Content-Type", "")
+    if "application/json" in content_type:
+        json_data = await request.json()
+        input_image_base64 = json_data.get("input_image_base64")
+        text = json_data.get("text", text)
+        size = json_data.get("size", size)
+        opacity = json_data.get("opacity", opacity)
+        angle = json_data.get("angle", angle)
+        color = json_data.get("color", color)
+        space = json_data.get("space", space)
+        kb = json_data.get("kb", kb)
+        dpi = json_data.get("dpi", dpi)
     if input_image_base64:
         img = base64_2_numpy(input_image_base64)
     else:
@@ -264,11 +323,19 @@ async def watermark(
 # 设置照片KB值接口(RGB图)
 @app.post("/set_kb")
 async def set_kb(
+    request: Request,
     input_image: UploadFile = File(None),
     input_image_base64: str = Form(None),
     dpi: int = Form(300),
     kb: int = Form(50),
 ):
+    # 获取 Content-Type
+    content_type = request.headers.get("Content-Type", "")
+    if "application/json" in content_type:
+        json_data = await request.json()
+        input_image_base64 = json_data.get("input_image_base64")
+        kb = json_data.get("kb", kb)
+        dpi = json_data.get("dpi", dpi)
     if input_image_base64:
         img = base64_2_numpy(input_image_base64)
     else:
@@ -297,6 +364,7 @@ async def set_kb(
 # 证件照智能裁剪接口
 @app.post("/idphoto_crop")
 async def idphoto_crop_inference(
+    request: Request,
     input_image: UploadFile = File(None),
     input_image_base64: str = Form(None),
     height: int = Form(413),
@@ -309,6 +377,20 @@ async def idphoto_crop_inference(
     top_distance_max: float = 0.12,
     top_distance_min: float = 0.10,
 ):
+    # 获取 Content-Type
+    content_type = request.headers.get("Content-Type", "")
+    if "application/json" in content_type:
+        json_data = await request.json()
+        input_image_base64 = json_data.get("input_image_base64")
+        height = json_data.get("height", height)
+        width = json_data.get("width", width)
+        face_detect_model = json_data.get("face_detect_model", face_detect_model)
+        hd = json_data.get("hd", hd)
+        dpi = json_data.get("dpi", dpi)
+        head_measure_ratio = json_data.get("head_measure_ratio", head_measure_ratio)
+        head_height_ratio = json_data.get("head_height_ratio", head_height_ratio)
+        top_distance_max = json_data.get("top_distance_max", top_distance_max)
+        top_distance_min = json_data.get("top_distance_min", top_distance_min)
     if input_image_base64:
         img = base64_2_numpy(input_image_base64)
     else:
